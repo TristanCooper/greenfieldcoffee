@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
+import { requireSupabaseEnv } from '@/lib/supabase/env';
 
 const Body = z.object({
   roasteryName: z.string().min(1).max(120),
@@ -71,15 +72,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  // Server-side configuration check.
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!serviceRole || !supabaseUrl || !anonKey) {
-    console.error('[signup] missing Supabase env vars');
+  // Server-side configuration check. requireSupabaseEnv throws if anything is
+  // missing, with a list of exactly which env vars need setting.
+  let supabaseUrl: string;
+  let anonKey: string;
+  let serviceRole: string;
+  try {
+    const env = requireSupabaseEnv();
+    supabaseUrl = env.url;
+    anonKey = env.anonKey;
+    serviceRole = env.serviceRoleKey;
+  } catch (err) {
+    console.error('[signup] missing Supabase env vars:', err);
     return NextResponse.json(
-      { error: 'Server is missing Supabase configuration. Contact support.' },
+      {
+        error:
+          'Server is missing Supabase configuration. Check .env.local — see .env.example.',
+      },
       { status: 500 },
     );
   }

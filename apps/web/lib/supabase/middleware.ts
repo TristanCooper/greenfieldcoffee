@@ -1,40 +1,43 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getSupabaseEnv } from './env';
 
 /**
- * Middleware client. Used to refresh the Supabase auth session on every
- * request so RLS-protected queries always see a valid token.
+ * Proxy (formerly middleware) client. Used to refresh the Supabase auth session
+ * on every request so RLS-protected queries always see a valid token.
  *
  * Public routes pass through; protected routes redirect to /login when
  * the user has no session.
  */
 export async function updateSession(request: NextRequest) {
+  const { url, anonKey } = getSupabaseEnv();
+  if (!url || !anonKey) {
+    // If Supabase isn't configured we can't refresh the session, but we can
+    // still serve public routes. Protected routes will fail when they try to
+    // query data — at that point the underlying client throws clearly.
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
-          }
-          response = NextResponse.next({ request });
-          for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
-          }
-        },
+  const supabase = createServerClient(url, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        for (const { name, value } of cookiesToSet) {
+          request.cookies.set(name, value);
+        }
+        response = NextResponse.next({ request });
+        for (const { name, value, options } of cookiesToSet) {
+          response.cookies.set(name, value, options);
+        }
       },
     },
-  );
+  });
 
   // IMPORTANT: do not run code between createServerClient and getUser.
-  // A simple mistake could make it very hard to debug issues with users
-  // being randomly logged out.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -42,7 +45,6 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/accept-invite');
   const isDashboard = pathname.startsWith('/dashboard');
-  const isMarketing = pathname === '/';
 
   if (isDashboard && !user) {
     const url = request.nextUrl.clone();
@@ -58,8 +60,6 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
-
-  void isMarketing;
 
   return response;
 }
