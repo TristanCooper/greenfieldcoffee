@@ -9,7 +9,8 @@
     "lint": "echo \"@greenfield/db: no lint configured\" && exit 0",
     "generate": "supabase gen types typescript --linked > src/database.types.ts && echo \"Wrote src/database.types.ts\"",
     "push": "tsx scripts/db-push.ts",
-    "push:dry": "tsx scripts/db-push.ts --dry"
+    "push:dry": "tsx scripts/db-push.ts --dry",
+    "push:mark": "tsx scripts/db-push.ts --mark"
   },
   "dependencies": {
     "pg": "^8.22.0",

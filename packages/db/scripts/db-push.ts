@@ -34,6 +34,12 @@ const ENV_FILE = join(REPO_ROOT, 'apps', 'web', '.env.local');
 
 const DRY_RUN = process.argv.includes('--dry') || process.argv.includes('--dry-run');
 
+// --mark <file>: record a filename as applied without running its SQL.
+// Useful when a migration was applied by hand and you want the runner to
+// pick up where the manual run left off.
+const markArgIdx = process.argv.findIndex((a) => a === '--mark');
+const MARK_FILE = markArgIdx >= 0 ? process.argv[markArgIdx + 1] : null;
+
 /**
  * Minimal .env.local parser. Only reads KEY=VALUE lines; ignores comments,
  * blank lines, and quoted values (handles basic single/double-quote stripping).
@@ -67,6 +73,28 @@ function loadEnvFile(path: string): Record<string, string> {
  */
 function redactUrl(url: string): string {
   return url.replace(/:[^:@/]+@/, ':***@');
+}
+
+/**
+ * Build a pg.Client config from a connection string, applying the same
+ * IPv4 pre-resolution as the main path. Used by both the main run and the
+ * --mark short-circuit so behaviour is consistent.
+ */
+async function clientConfigForFamily(
+  url: string,
+  family: number,
+): Promise<{ connectionString: string; hostaddr?: string }> {
+  const config: { connectionString: string; hostaddr?: string } = { connectionString: url };
+  if (family === 4) {
+    const resolved = await resolveIPv4FromConnectionString(url);
+    if (resolved) {
+      config.hostaddr = resolved.ipv4;
+      console.log(`[db:push] resolved ${resolved.host} -> ${resolved.ipv4} (forced IPv4)`);
+    } else {
+      console.log(`[db:push] could not pre-resolve IPv4; letting pg try`);
+    }
+  }
+  return config;
 }
 
 /**
@@ -141,18 +169,23 @@ async function main(): Promise<void> {
     return;
   }
 
-  const clientConfig: { connectionString: string; hostaddr?: string } = {
-    connectionString: url,
-  };
-  if (family === 4) {
-    const resolved = await resolveIPv4FromConnectionString(url);
-    if (resolved) {
-      clientConfig.hostaddr = resolved.ipv4;
-      console.log(`[db:push] resolved ${resolved.host} -> ${resolved.ipv4} (forced IPv4)`);
-    } else {
-      console.log(`[db:push] could not pre-resolve IPv4; letting pg try`);
+  // --mark <file>: connect, record the file as applied, disconnect.
+  if (MARK_FILE) {
+    const client = new Client(clientConfigForFamily(url, family));
+    await client.connect();
+    try {
+      await client.query(
+        'insert into public.schema_migrations (filename) values ($1) on conflict (filename) do nothing',
+        [MARK_FILE],
+      );
+      console.log(`[db:push] marked ${MARK_FILE} as applied`);
+    } finally {
+      await client.end();
     }
+    return;
   }
+
+  const clientConfig = await clientConfigForFamily(url, family);
 
   const client = new Client(clientConfig);
   try {
