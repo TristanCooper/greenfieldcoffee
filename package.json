@@ -1,0 +1,30 @@
+{
+  "name": "greenfield-coffee",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Operations toolkit for UK & EU small-to-medium coffee roasteries, with EUDR traceability built in.",
+  "packageManager": "pnpm@10.34.1",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @greenfield/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @greenfield/web start",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @greenfield/web test",
+    "test:e2e": "pnpm --filter @greenfield/web test:e2e",
+    "clean": "pnpm -r exec rm -rf .next dist node_modules/.cache"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "supabase",
+      "unrs-resolver"
+    ]
+  }
+}

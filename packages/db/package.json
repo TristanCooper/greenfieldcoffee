@@ -1,0 +1,15 @@
+{
+  "name": "@greenfield/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "echo \"@greenfield/db: no TS source to check\" && exit 0",
+    "build": "echo \"@greenfield/db: no build step (SQL is the artifact)\" && exit 0",
+    "lint": "echo \"@greenfield/db: no lint configured\" && exit 0",
+    "generate": "supabase gen types typescript --linked > src/database.types.ts && echo \"Wrote src/database.types.ts\""
+  },
+  "devDependencies": {
+    "supabase": "^1.207.0"
+  }
+}

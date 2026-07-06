@@ -1,0 +1,48 @@
+/*
+ * Greenfield Coffee — design tokens.
+ * Imported once from apps/web/app/globals.css.
+ * Tailwind 4 picks these up via @theme and exposes them as utilities.
+ *
+ * Colour palette lifted from Plans/index.html (the wireframe clickthrough):
+ *   --bg: #f4f4f1     paper-white
+ *   --ink: #1a1a1a    near-black
+ *   --accent: #2b3a55 deep navy — coffee professional
+ *   --accent-2: #b07a3c warm caramel — coffee accent
+ *   --ok/warn/bad semantic states
+ */
+
+@import "tailwindcss";
+
+@theme {
+  /* Neutrals */
+  --color-paper: #ffffff;
+  --color-bg: #f4f4f1;
+  --color-bg-subtle: #fafaf7;
+  --color-ink: #1a1a1a;
+  --color-ink-2: #4a4a4a;
+  --color-ink-3: #7a7a7a;
+  --color-line: #d8d8d2;
+  --color-line-2: #e8e8e2;
+
+  /* Brand */
+  --color-accent: #2b3a55;
+  --color-accent-2: #b07a3c;
+  --color-accent-soft: #cdd5e0;
+
+  /* Semantic */
+  --color-ok: #2f6b3a;
+  --color-ok-soft: #e6f1e7;
+  --color-warn: #a8631a;
+  --color-warn-soft: #fbeede;
+  --color-bad: #9b2c2c;
+  --color-bad-soft: #f7e0e0;
+  --color-info-soft: #e0e6f0;
+
+  /* Spacing — keep the wireframe rhythm */
+  --radius-sm: 4px;
+  --radius: 6px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

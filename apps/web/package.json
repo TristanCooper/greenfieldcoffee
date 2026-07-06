@@ -1,0 +1,42 @@
+{
+  "name": "@greenfield/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@greenfield/types": "workspace:*",
+    "@greenfield/ui": "workspace:*",
+    "@hookform/resolvers": "5.4.0",
+    "@react-pdf/renderer": "4.5.1",
+    "@supabase/ssr": "0.12.0",
+    "@supabase/supabase-js": "2.110.0",
+    "@tailwindcss/postcss": "4.3.2",
+    "clsx": "^2.1.1",
+    "date-fns": "4.4.0",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.81.0",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss": "4.3.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "16.2.10",
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,14 @@
+/* Tailwind 4 CSS-first config + design tokens from @greenfield/ui */
+@import "@greenfield/ui/tokens.css";
+
+/* Local overrides */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
