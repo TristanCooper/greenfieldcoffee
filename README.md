@@ -41,9 +41,11 @@ Prerequisites: Node.js 20.10 or newer, pnpm 9.x.
 
 ```bash
 pnpm install
-cp .env.example .env.local        # fill in from your Supabase dashboard
-pnpm dev                          # starts apps/web on http://localhost:3000
+cp .env.example apps/web/.env.local  # fill in from your Supabase dashboard
+pnpm --filter @greenfield/web dev    # starts apps/web on http://localhost:3000
 ```
+
+> **Why `apps/web/.env.local` and not the repo root?** Next.js loads `.env.local` relative to the directory it's serving from. `pnpm --filter @greenfield/web dev` runs Next from `apps/web/`, so that's where the env file needs to live. `apps/web/` is git-ignored.
 
 ### Getting your Supabase keys
 
