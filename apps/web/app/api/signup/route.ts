@@ -99,10 +99,21 @@ export async function POST(request: NextRequest) {
   });
 
   // Helper: wrap a Supabase call so network/auth errors become structured responses.
+  //
+  // The success variants are discriminated by `optionalData` so TypeScript can
+  // narrow on it. requireData: true (default) -> data is T and optionalData
+  // is false. requireData: false -> data is T | null and optionalData is true.
+  type AdminStepResult<T> =
+    | { ok: true; optionalData: false; data: T }
+    | { ok: true; optionalData: true; data: T | null }
+    | { ok: false; response: NextResponse };
+
   async function adminStep<T>(
     label: string,
     fn: () => Promise<{ data: T | null; error: { message: string } | null }>,
-  ): Promise<{ ok: true; data: T } | { ok: false; response: NextResponse }> {
+    options: { requireData?: boolean } = {},
+  ): Promise<AdminStepResult<T>> {
+    const { requireData = true } = options;
     try {
       const { data, error } = await fn();
       if (error) {
@@ -127,7 +138,7 @@ export async function POST(request: NextRequest) {
           ),
         };
       }
-      if (data === null) {
+      if (data === null && requireData) {
         console.error(`[signup] ${label} returned no data`);
         return {
           ok: false,
@@ -137,7 +148,9 @@ export async function POST(request: NextRequest) {
           ),
         };
       }
-      return { ok: true, data };
+      return requireData
+        ? { ok: true, optionalData: false as const, data: data as T }
+        : { ok: true, optionalData: true as const, data };
     } catch (err) {
       console.error(`[signup] ${label} threw:`, err);
       if (looksLikeNetworkError(errorMessage(err))) {
@@ -172,6 +185,10 @@ export async function POST(request: NextRequest) {
     }).then((r) => ({ data: r.data.user, error: r.error })),
   );
   if (!userStep.ok) return userStep.response;
+  if (userStep.optionalData) {
+    // Should never happen — createUser always returns a user. Defensive.
+    return NextResponse.json({ error: 'create_user returned no user.' }, { status: 500 });
+  }
   const authUserId = userStep.data.id;
 
   // 2. Create the tenant.
@@ -191,6 +208,9 @@ export async function POST(request: NextRequest) {
     await safeDelete(() => admin.auth.admin.deleteUser(authUserId));
     return tenantStep.response;
   }
+  if (tenantStep.optionalData) {
+    return NextResponse.json({ error: 'create_tenant returned no row.' }, { status: 500 });
+  }
   const tenantId = tenantStep.data.id;
 
   // 3. Add tenant_id to the auth user's app_metadata so RLS picks it up.
@@ -198,6 +218,7 @@ export async function POST(request: NextRequest) {
     admin.auth.admin
       .updateUserById(authUserId, { app_metadata: { tenant_id: tenantId } })
       .then((r) => ({ data: r.data as unknown, error: r.error })),
+    { requireData: false },
   );
   if (!updateStep.ok) {
     await safeDelete(() => admin.from('tenants').delete().eq('id', tenantId));
@@ -206,16 +227,21 @@ export async function POST(request: NextRequest) {
   }
 
   // 4. Create the public.users row for this person.
+  //    .select().single() confirms the insert actually created the row.
   const usersStep = await adminStep('create_user_row', async () => {
-    const r = await admin.from('users').insert({
-      id: authUserId,
-      tenant_id: tenantId,
-      email: parsed.email,
-      full_name: parsed.fullName,
-      role: 'owner',
-      status: 'active',
-    });
-    return { data: r.data as unknown, error: r.error };
+    const r = await admin
+      .from('users')
+      .insert({
+        id: authUserId,
+        tenant_id: tenantId,
+        email: parsed.email,
+        full_name: parsed.fullName,
+        role: 'owner',
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    return { data: r.data, error: r.error };
   });
   if (!usersStep.ok) {
     await safeDelete(() => admin.from('tenants').delete().eq('id', tenantId));
