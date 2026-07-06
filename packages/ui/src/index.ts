@@ -17,3 +17,6 @@ export { Stat } from './Stat';
 
 export { AppShell, PageHeader, EmptyState } from './AppShell';
 export type { NavItem } from './AppShell';
+
+export { StepIndicator, StepBody } from './StepIndicator';
+export type { Step } from './StepIndicator';

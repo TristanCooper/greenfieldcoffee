@@ -66,14 +66,24 @@ SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxx...             (or the legacy service_ro
 
 ## Database setup
 
-The SQL migration in `packages/db/migrations/0001_initial_schema.sql` creates the schema, row-level security policies, and the audit log. **You review and apply it yourself** — never let an agent push to your database blind.
+The SQL migrations in `packages/db/migrations/` create the schema, row-level security policies, and the audit log. Apply them with the migration runner:
 
-Recommended workflow:
+```bash
+pnpm --filter @greenfield/db push:dry    # see what would be applied
+pnpm --filter @greenfield/db push        # apply pending migrations
+```
 
-1. Open `packages/db/migrations/0001_initial_schema.sql`, read it through.
-2. In the Supabase dashboard, go to SQL Editor, paste the contents, run.
-3. After it's applied, regenerate types: `pnpm --filter @greenfield/db generate`.
-4. Re-run `pnpm typecheck` to confirm the generated types match `packages/types`.
+The runner reads `SUPABASE_DB_URL` from `apps/web/.env.local`. Each migration runs in its own transaction and is recorded in a `schema_migrations` table — re-running applies only what's pending.
+
+**If the connection fails with `ENETUNREACH`:** Supabase's direct database host (`db.*.supabase.co`) resolves only to IPv6 on most projects. If your network has no IPv6 route, switch to the **connection pooler** in the dashboard: Project Settings → Database → Connection string → "Connection pooling" (port 6543). Replace `SUPABASE_DB_URL` with the pooler URI. The pooler resolves to IPv4.
+
+After migrations are applied, regenerate TypeScript types so `@greenfield/types` stays accurate:
+
+```bash
+pnpm --filter @greenfield/db generate
+```
+
+Then re-run `pnpm typecheck` to confirm the generated types match.
 
 ## Roles
 
