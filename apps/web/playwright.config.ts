@@ -12,10 +12,22 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
+    // Fall back to placeholder env vars so smoke tests run without a populated
+    // .env.local. The Supabase client only complains when you actually hit an
+    // auth path; the marketing/login/signup pages render fine without one.
     command: 'pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL:
+        process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'fake-anon-key',
+      SUPABASE_SERVICE_ROLE_KEY:
+        process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'fake-service-role-key',
+      NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME ?? 'Greenfield Coffee',
+    },
   },
   projects: [
     {
